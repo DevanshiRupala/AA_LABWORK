@@ -1,81 +1,104 @@
-#include<bits/stdc++.h>
-
+#include <bits/stdc++.h>
 using namespace std;
 
-int G1[4][4];
-
-void mincut(int G[4][4],int u,int v,int n)
-{
-	for(int i=0;i<n-1;i++)
-	{
-    	for(int j=i+1;j<n;j++)
-    	{
-        	int cnt = 0;
-        	if(i == u && j == v)
-        	{
-            	G1[i][j]=G1[j][i]=0;
-        	}
-        	else if(i == u || i == v)
-        	{
-            	if(G[u][j] > 0)
-            	cnt+=G[u][j];
-            	if(G[v][j] > 0)
-            	cnt+=G[v][j];
-            	G1[u][j]=G1[v][j]=cnt;
-        	}
-        	else if(j == u || j == v)
-        	{
-            	if(G[u][i] > 0)
-            	cnt+=G[u][i];
-            	if(G[v][i] > 0)
-            	cnt+=G[v][i];
-            	G1[i][u]=G1[i][v]=cnt;
-        	}
-        	else{
-            	G1[i][u]=G1[i][v]=cnt;
-        	}
-    	}
-	}
-    
-	for(int i=0;i<n;i++)
-	{
-    	for(int j=0;j<n;j++)
-    	{
-        	if(i >= j)
-        	{
-            	G1[i][j]=G1[j][i];
-        	}
-    	}
-	}
-    
-	int G2[3][3];
-	for(int i=0;i<n;i++)
-	{
-    	for(int j=0;j<n;j++)
-    	{
-        	if(i == v || j == v)
-          	G2[i][j] = G1[i+1][j+1];
-         	else
-          	G2[i][j] = G1[i][j];
-    	}
-	}
-    
-	for(int i=0;i<n-1;i++)
-	{
-    	for(int j=0;j<n-1;j++)
-    	{
-        	cout << G2[i][j] << " ";
-    	}
-    	cout << endl;
-	}
+int find(int node, vector<int> &parent) {
+        // If the node is the parent of 
+        // itself then it is the leader 
+        // of the tree. 
+        if(node == parent[node]) return node;
+        
+        //Else, finding parents and also 
+        // compressing the paths.
+        return parent[node] = find(parent[node],parent);
 }
 
-int main()
-{
-	int G[4][4] = {{0,1,1,1},
-         	{1,0,1,0},
-         	{1,1,0,1},
-         	{1,0,1,0}};
-	mincut(G,0,2,4);
-	return 0;
+ // Union function 
+void Union(int u, int v, vector<int> &parent) {
+        u = find(u, parent);
+        v = find(v, parent);
+        parent[v] = u;
+}
+
+int count_edges(vector<vector<int>> &g) {
+    //Basically checking the upper Triangle part of the adj. matrix to find edges n/2. 
+    int counter = 0;
+    int i, j;
+    int n = g.size();
+    for(i=0; i<n ;i++) {
+        for(j = i+1; j<n; j++) {
+            if(g[i][j] == 1) counter++;
+        }
+    }
+    return counter;
+}
+
+void create_edge_matrix(vector<vector<int>> &g, int e[][2]) {
+    int i, j; 
+    int n = g.size();
+    int x = 0;
+    for(i=0; i<n; i++) {
+        for(j=i+1; j<n; j++) {
+            if(g[i][j] == 1) {
+               e[x][0]=i;
+               e[x][1]=j;
+               x++;
+            }
+        }
+    }
+}
+
+int main() {
+   int n = 4;
+   
+   srand(time(NULL));
+   vector<vector<int>> graph = {{0,1,1,1},{1,0,1,0},{1,1,0,1},{1,0,1,0}};   //Adj. matrix
+   
+    int mincut = INT_MAX;
+    
+   for(int k = 0; k<100*n*n; k++) {
+       vector<int> parent(n);
+       for(int i=0; i<n; i++) {
+           parent[i] = i;
+       }
+       
+       int m = count_edges(graph);
+       
+       //Creating edge matrix 
+       int edges[m][2];
+       create_edge_matrix(graph, edges);
+       
+       //Iterating till we dont have V and V-S, (at that we'll have n = 2)
+       while(n > 2) {
+           int u, v;
+           int e = rand() % m;  //Selecting random edge from Edge- matrix
+           u = edges[e][0];
+           v = edges[e][1];
+           
+           int set1 = find(u, parent);
+           int set2 = find(v, parent);
+           
+           //Checking if both vertices are in same grp or not, if set1 == set2 then they are in same gropu bcuz they'll have same leader.
+           
+           if(set1 != set2) {
+                Union(u,v,parent); // Reducing count of vertices by 1.
+                n--;
+            }
+       }
+       
+        // cout << "Edges needs to be removed : " << endl;
+        int ans = 0;
+     
+        cout << endl;
+        for(int i=0; i<m; i++) {
+            int set1 = find(edges[i][0],parent);
+            int set2 = find(edges[i][1],parent);
+            if(set1 != set2) {
+                ans++;
+            }
+        }
+        if(ans < mincut) mincut = ans;
+        // cout << ans << endl;
+   }
+    cout << "Min. cut size is : " << mincut << endl;
+    return 0;
 }
